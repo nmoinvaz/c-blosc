@@ -9,16 +9,16 @@ extern "C" {
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   const char *compressors[] = { "blosclz", "lz4", "lz4hc", "snappy", "zlib", "zstd" };
-  int level = 9, filter = BLOSC_BITSHUFFLE, cindex = 3, i = 0;
+  int level = 9, filter = BLOSC_BITSHUFFLE, cindex = 0, i = 0;
   size_t nbytes, cbytes, blocksize;
   void *output, *input;
 
   blosc_set_nthreads(1);
 
   if (size > 0)
-    level = data[0] % 9;
+    level = data[0] % (9 + 1);
   if (size > 1)
-    filter = data[1] % BLOSC_BITSHUFFLE;
+    filter = data[1] % (BLOSC_BITSHUFFLE + 1);
   if (size > 2)
     cindex = data[2];
 
@@ -30,6 +30,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     /* No compressors available */
     return 0;
   }
+
+  if (size > 3 && data[3] % 7 == 0)
+    blosc_set_blocksize(4096);
+
+  if (size > 4)
+    blosc_set_splitmode(data[4] % BLOSC_FORWARD_COMPAT_SPLIT + 1);
 
   output = malloc(size + 1);
   if (output == NULL)
